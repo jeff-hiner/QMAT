@@ -2,6 +2,7 @@
 #define _SLABMESH_H
 
 #include "PrimMesh.h"
+#include <cstdint>
 
 class SlabPrim
 {
@@ -174,6 +175,30 @@ public:
     void CleanIsolatedVertices();
     void InitialTopologyProperty(unsigned vid);
     void InitialTopologyProperty();
+
+public:
+    // Buffer-based loading for WASM interface
+    // Returns true on success, false on error
+    bool loadFromBuffers(
+        int32_t vertex_count,
+        const float* centers,      // [vertex_count * 3] - x,y,z interleaved
+        const float* radii,        // [vertex_count]
+        int32_t edge_count,
+        const int32_t* edges,      // [edge_count * 2] - v0,v1 pairs
+        int32_t face_count,
+        const int32_t* faces,      // [face_count * 3] - v0,v1,v2 triplets
+        double bb_diagonal
+    );
+
+    // Export to buffers for WASM interface
+    // Returns size needed for output buffer, or 0 on error
+    // If output pointers are null, just returns the required size
+    size_t exportToBuffers(
+        float* out_centers,        // [numVertices * 3]
+        float* out_radii,          // [numVertices]
+        int32_t* out_edges,        // [numEdges * 2]
+        int32_t* out_faces         // [numFaces * 3]
+    );
 };
 
 #endif

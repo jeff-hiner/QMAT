@@ -3040,3 +3040,199 @@ void SlabMesh::InitialTopologyProperty() {
         }
     }
 }
+
+// ============================================================================
+// Buffer-based I/O for WASM interface
+// ============================================================================
+
+bool SlabMesh::loadFromBuffers(
+    int32_t vertex_count,
+    const float* centers,
+    const float* radii,
+    int32_t edge_count,
+    const int32_t* edges_buf,
+    int32_t face_count,
+    const int32_t* faces_buf,
+    double bb_diagonal)
+{
+    // Validate inputs
+    if (vertex_count <= 0 || !centers || !radii) return false;
+    if (edge_count < 0 || (edge_count > 0 && !edges_buf)) return false;
+    if (face_count < 0 || (face_count > 0 && !faces_buf)) return false;
+    if (bb_diagonal <= 0) return false;
+
+    // Clear existing data
+    clear();
+
+    // Set normalization factor
+    this->bb_diagonal_length = bb_diagonal;
+    this->bound_weight = 0.1;
+
+    numVertices = 0;
+    numEdges = 0;
+    numFaces = 0;
+
+    // Load vertices
+    for (int32_t i = 0; i < vertex_count; i++) {
+        Bool_SlabVertexPointer bsvp;
+        bsvp.first = true;
+        bsvp.second = new SlabVertex;
+
+        // Normalize coordinates by bb_diagonal
+        double x = static_cast<double>(centers[i * 3 + 0]) / bb_diagonal;
+        double y = static_cast<double>(centers[i * 3 + 1]) / bb_diagonal;
+        double z = static_cast<double>(centers[i * 3 + 2]) / bb_diagonal;
+        double r = static_cast<double>(radii[i]) / bb_diagonal;
+
+        bsvp.second->sphere.center[0] = x;
+        bsvp.second->sphere.center[1] = y;
+        bsvp.second->sphere.center[2] = z;
+        bsvp.second->sphere.radius = r;
+        bsvp.second->index = vertices.size();
+
+        vertices.push_back(bsvp);
+        numVertices++;
+    }
+
+    // Load edges
+    for (int32_t i = 0; i < edge_count; i++) {
+        unsigned v0 = static_cast<unsigned>(edges_buf[i * 2 + 0]);
+        unsigned v1 = static_cast<unsigned>(edges_buf[i * 2 + 1]);
+
+        // Validate indices
+        if (v0 >= static_cast<unsigned>(vertex_count) ||
+            v1 >= static_cast<unsigned>(vertex_count)) {
+            return false;
+        }
+
+        Bool_SlabEdgePointer bsep;
+        bsep.first = true;
+        bsep.second = new SlabEdge;
+        bsep.second->vertices_.first = v0;
+        bsep.second->vertices_.second = v1;
+        bsep.second->index = edges.size();
+
+        // Update vertex-edge connections
+        vertices[v0].second->edges_.insert(edges.size());
+        vertices[v1].second->edges_.insert(edges.size());
+
+        edges.push_back(bsep);
+        numEdges++;
+    }
+
+    // Load faces
+    for (int32_t i = 0; i < face_count; i++) {
+        unsigned v0 = static_cast<unsigned>(faces_buf[i * 3 + 0]);
+        unsigned v1 = static_cast<unsigned>(faces_buf[i * 3 + 1]);
+        unsigned v2 = static_cast<unsigned>(faces_buf[i * 3 + 2]);
+
+        // Validate indices
+        if (v0 >= static_cast<unsigned>(vertex_count) ||
+            v1 >= static_cast<unsigned>(vertex_count) ||
+            v2 >= static_cast<unsigned>(vertex_count)) {
+            return false;
+        }
+
+        Bool_SlabFacePointer bsfp;
+        bsfp.first = true;
+        bsfp.second = new SlabFace;
+        bsfp.second->vertices_.insert(v0);
+        bsfp.second->vertices_.insert(v1);
+        bsfp.second->vertices_.insert(v2);
+        bsfp.second->index = faces.size();
+
+        // Find and connect edges
+        unsigned eid;
+        if (Edge(v0, v1, eid)) {
+            bsfp.second->edges_.insert(eid);
+            edges[eid].second->faces_.insert(faces.size());
+        }
+        if (Edge(v0, v2, eid)) {
+            bsfp.second->edges_.insert(eid);
+            edges[eid].second->faces_.insert(faces.size());
+        }
+        if (Edge(v1, v2, eid)) {
+            bsfp.second->edges_.insert(eid);
+            edges[eid].second->faces_.insert(faces.size());
+        }
+
+        // Update vertex-face connections
+        vertices[v0].second->faces_.insert(faces.size());
+        vertices[v1].second->faces_.insert(faces.size());
+        vertices[v2].second->faces_.insert(faces.size());
+
+        faces.push_back(bsfp);
+        numFaces++;
+    }
+
+    // Store initial counts
+    iniNumVertices = numVertices;
+    iniNumEdges = numEdges;
+    iniNumFaces = numFaces;
+
+    // Initialize mesh properties
+    CleanIsolatedVertices();
+    computebb();
+    ComputeFacesCentroid();
+    ComputeFacesNormal();
+    ComputeVerticesNormal();
+    ComputeEdgesCone();
+    ComputeFacesSimpleTriangles();
+    DistinguishVertexType();
+
+    return true;
+}
+
+size_t SlabMesh::exportToBuffers(
+    float* out_centers,
+    float* out_radii,
+    int32_t* out_edges,
+    int32_t* out_faces)
+{
+    // First compact the storage to remove deleted elements
+    AdjustStorage();
+
+    // Calculate total size needed
+    size_t size_needed = 0;
+    size_needed += numVertices * 3 * sizeof(float);  // centers
+    size_needed += numVertices * sizeof(float);       // radii
+    size_needed += numEdges * 2 * sizeof(int32_t);    // edges
+    size_needed += numFaces * 3 * sizeof(int32_t);    // faces
+
+    // If output pointers are null, just return size
+    if (!out_centers && !out_radii && !out_edges && !out_faces) {
+        return size_needed;
+    }
+
+    // Export vertices
+    if (out_centers && out_radii) {
+        for (unsigned i = 0; i < vertices.size(); i++) {
+            // Denormalize by multiplying by bb_diagonal_length
+            out_centers[i * 3 + 0] = static_cast<float>(vertices[i].second->sphere.center[0] * bb_diagonal_length);
+            out_centers[i * 3 + 1] = static_cast<float>(vertices[i].second->sphere.center[1] * bb_diagonal_length);
+            out_centers[i * 3 + 2] = static_cast<float>(vertices[i].second->sphere.center[2] * bb_diagonal_length);
+            out_radii[i] = static_cast<float>(vertices[i].second->sphere.radius * bb_diagonal_length);
+        }
+    }
+
+    // Export edges
+    if (out_edges) {
+        for (unsigned i = 0; i < edges.size(); i++) {
+            out_edges[i * 2 + 0] = static_cast<int32_t>(edges[i].second->vertices_.first);
+            out_edges[i * 2 + 1] = static_cast<int32_t>(edges[i].second->vertices_.second);
+        }
+    }
+
+    // Export faces
+    if (out_faces) {
+        for (unsigned i = 0; i < faces.size(); i++) {
+            // Convert set to array (set is ordered, so consistent output)
+            std::set<unsigned>::iterator it = faces[i].second->vertices_.begin();
+            out_faces[i * 3 + 0] = static_cast<int32_t>(*it++);
+            out_faces[i * 3 + 1] = static_cast<int32_t>(*it++);
+            out_faces[i * 3 + 2] = static_cast<int32_t>(*it);
+        }
+    }
+
+    return size_needed;
+}
