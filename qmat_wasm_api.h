@@ -1,5 +1,9 @@
 // Q-MAT WASM Buffer API
 // C-compatible interface for WebAssembly module
+//
+// Design: Caller allocates all buffers. Each array pointer is paired with
+// its element count. Structs group related data logically.
+
 #ifndef QMAT_WASM_API_H
 #define QMAT_WASM_API_H
 
@@ -10,54 +14,92 @@
 extern "C" {
 #endif
 
-// Error codes
-#define QMAT_SUCCESS          0
-#define QMAT_ERR_ALLOC       -1
-#define QMAT_ERR_INVALID     -2
-#define QMAT_ERR_TOPOLOGY    -3
-#define QMAT_ERR_SIMPLIFY    -4
+// ============ Error codes ============
 
-// Result header structure (followed by variable-length data)
-// Memory layout:
-//   [0-3]   error_code (int32)
-//   [4-7]   vertex_count (int32)
-//   [8-11]  edge_count (int32)
-//   [12-15] face_count (int32)
-//   [16...] vertex_centers (float[vertex_count * 3])
-//   [...]   vertex_radii (float[vertex_count])
-//   [...]   edges (int32[edge_count * 2])
-//   [...]   faces (int32[face_count * 3])
+#define QMAT_SUCCESS           0
+#define QMAT_ERR_NULL_PTR     -1
+#define QMAT_ERR_INVALID_SIZE -2
+#define QMAT_ERR_TOPOLOGY     -3
+#define QMAT_ERR_SIMPLIFY     -4
+#define QMAT_ERR_BUFFER_TOO_SMALL -5
 
-// Memory management - must be exported for wasmer-python
-void* wasm_malloc(size_t size);
-void wasm_free(void* ptr);
+// ============ Slice types (ptr + len always paired) ============
 
-// Main simplification function
-// Returns pointer to result buffer (caller must wasm_free)
-// Returns NULL on critical failure
-void* qmat_simplify_buffer(
-    int32_t vertex_count,
-    int32_t edge_count,
-    int32_t face_count,
-    float bb_diagonal,
-    int32_t target_vertices,
-    const float* vertex_centers,    // [vertex_count * 3] - x,y,z interleaved
-    const float* vertex_radii,      // [vertex_count]
-    const int32_t* edges,           // [edge_count * 2] - v0,v1 pairs
-    const int32_t* faces            // [face_count * 3] - v0,v1,v2 triplets
+typedef struct {
+    const float* ptr;
+    size_t len;  // element count (e.g., vertex count), not byte count
+} FloatSlice;
+
+typedef struct {
+    const int32_t* ptr;
+    size_t len;
+} Int32Slice;
+
+typedef struct {
+    float* ptr;
+    size_t len;  // capacity on input, actual count on output
+} FloatSliceMut;
+
+typedef struct {
+    int32_t* ptr;
+    size_t len;  // capacity on input, actual count on output
+} Int32SliceMut;
+
+// ============ Domain structures ============
+
+// Medial Axis Transform representation (immutable input)
+// Prefixed to avoid conflicts with internal C++ types
+typedef struct {
+    FloatSlice centers;  // len = vertex_count, data is [x,y,z, x,y,z, ...] (stride 3)
+    FloatSlice radii;    // len = vertex_count
+    Int32Slice edges;    // len = edge_count, data is [v0,v1, v0,v1, ...] (stride 2)
+    Int32Slice faces;    // len = face_count, data is [v0,v1,v2, ...] (stride 3)
+} WasmMAT;
+
+// Medial Axis Transform representation (mutable output)
+// On input: .len fields contain buffer capacity
+// On output: .len fields contain actual element count written
+typedef struct {
+    FloatSliceMut centers;
+    FloatSliceMut radii;
+    Int32SliceMut edges;
+    Int32SliceMut faces;
+} WasmMATMut;
+
+// ============ Parameters ============
+
+typedef struct {
+    float bb_diagonal;       // Bounding box diagonal for normalization
+    int32_t target_vertices; // Target vertex count after simplification
+} QMATParams;
+
+// ============ API ============
+
+// Simplify a Medial Axis Transform using quadratic error metrics.
+//
+// Parameters:
+//   input  - Input MAT data (must be valid, non-NULL)
+//   params - Simplification parameters
+//   output - Pre-allocated output buffers. On input, .len fields specify
+//            buffer capacity. On success, .len fields are updated to
+//            actual counts written.
+//
+// Returns:
+//   QMAT_SUCCESS on success
+//   QMAT_ERR_NULL_PTR if any required pointer is NULL
+//   QMAT_ERR_INVALID_SIZE if input sizes are inconsistent
+//   QMAT_ERR_BUFFER_TOO_SMALL if output buffers are too small
+//   QMAT_ERR_TOPOLOGY on topology errors
+//   QMAT_ERR_SIMPLIFY on simplification failure
+//
+// Note: Output vertex count will be <= min(target_vertices, input vertex count)
+//       Output edge/face counts will be <= input edge/face counts
+//       Caller should allocate output buffers with capacity >= input counts
+int32_t qmat_simplify(
+    const WasmMAT* input,
+    const QMATParams* params,
+    WasmMATMut* output
 );
-
-// Get counts from result buffer (for convenience)
-int32_t qmat_result_error_code(void* result);
-int32_t qmat_result_vertex_count(void* result);
-int32_t qmat_result_edge_count(void* result);
-int32_t qmat_result_face_count(void* result);
-
-// Get data pointers from result buffer
-const float* qmat_result_centers(void* result);
-const float* qmat_result_radii(void* result);
-const int32_t* qmat_result_edges(void* result);
-const int32_t* qmat_result_faces(void* result);
 
 #ifdef __cplusplus
 }
