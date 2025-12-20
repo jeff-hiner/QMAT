@@ -1,5 +1,8 @@
 #include "SlabMesh.h"
+#ifdef _OPENMP
 #include <omp.h>
+#endif
+#include <iomanip>
 
 void SlabMesh::AdjustStorage()
 {
@@ -997,6 +1000,7 @@ bool SlabMesh::Contractible(unsigned vid_src1, unsigned vid_src2, Vector3d &v_tg
     return true;
 }
 
+#ifndef QMAT_NO_CGAL
 bool SlabMesh::MinCostBoundaryEdgeCollapse(unsigned & eid)
 {
     //merge 2 vertices of the edge first, then move the combined vertex to the preferred point and resize it.
@@ -1092,6 +1096,7 @@ bool SlabMesh::MinCostBoundaryEdgeCollapse(unsigned & eid)
                 break;
         }
 
+#ifndef QMAT_NO_CGAL
         if (compute_hausdorff == true)
         {
             double temp_sum_haus_dis = meanhausdorff_distance * pmesh->pVertexList.size();
@@ -1143,6 +1148,7 @@ bool SlabMesh::MinCostBoundaryEdgeCollapse(unsigned & eid)
             }
             meanhausdorff_distance = temp_sum_haus_dis / pmesh->pVertexList.size();
         }
+#endif // QMAT_NO_CGAL
 
         for (std::set<unsigned>::iterator si = vertices[vid_tgt].second->edges_.begin(); si != vertices[vid_tgt].second->edges_.end(); si ++)
         {
@@ -1175,6 +1181,7 @@ bool SlabMesh::MinCostBoundaryEdgeCollapse(unsigned & eid)
 
     return true;
 }
+#endif // QMAT_NO_CGAL (MinCostBoundaryEdgeCollapse)
 
 bool SlabMesh::MinCostEdgeCollapse(unsigned & eid){
     //merge 2 vertices of the edge first, then move the combined vertex to the preferred point and resize it.
@@ -1314,6 +1321,7 @@ bool SlabMesh::MinCostEdgeCollapse(unsigned & eid){
             edge_collapses_queue.push(EdgeInfo(*si, edges[*si].second->collapse_cost));
         }
 
+#ifndef QMAT_NO_CGAL
         if (compute_hausdorff)
         {
             double temp_sum_haus_dis = meanhausdorff_distance * pmesh->pVertexList.size();
@@ -1367,6 +1375,7 @@ bool SlabMesh::MinCostEdgeCollapse(unsigned & eid){
             }
             meanhausdorff_distance = temp_sum_haus_dis / pmesh->pVertexList.size();
         }
+#endif // QMAT_NO_CGAL
     }
 
     return true;
@@ -1665,6 +1674,7 @@ void SlabMesh::EvaluateEdgeCollapseCost(unsigned eid){
     edges[eid].second->sphere.radius = lamdar.W();
 }
 
+#ifndef QMAT_NO_CGAL
 void SlabMesh::EvaluateEdgeHausdorffCost(unsigned eid)
 {
     if (!edges[eid].first)
@@ -1915,6 +1925,7 @@ void SlabMesh::ReEvaluateEdgeHausdorffCost(unsigned eid)
     edges[eid].second->sphere.center = Wm4::Vector3d(lamdar.X(), lamdar.Y(), lamdar.Z());
     edges[eid].second->sphere.radius = lamdar.W();
 }
+#endif // QMAT_NO_CGAL (EvaluateEdgeHausdorffCost and ReEvaluateEdgeHausdorffCost)
 
 void SlabMesh::Simplify(int threshold){
 
@@ -1946,6 +1957,7 @@ void SlabMesh::Simplify(int threshold){
     }
 
     int deleteSphereNum = 0;
+#ifndef QMAT_NO_CGAL
     if (!boundary_edge_collapses_queue.empty())
     {
         while (deleteSphereNum < threshold && numVertices > 1 && !boundary_edge_collapses_queue.empty())
@@ -1960,6 +1972,7 @@ void SlabMesh::Simplify(int threshold){
             }
         }
     }else
+#endif
     {
         while (deleteSphereNum < threshold && numVertices > 1 && !edge_collapses_queue.empty())
         {
@@ -2000,6 +2013,7 @@ void SlabMesh::initCollapseQueue(){
     }
 }
 
+#ifndef QMAT_NO_CGAL
 void SlabMesh::initBoundaryCollapseQueue()
 {
     for (int i = 0; i < edges.size(); i ++)
@@ -2034,6 +2048,7 @@ void SlabMesh::initBoundaryCollapseQueue()
         }
     }
 }
+#endif // QMAT_NO_CGAL
 
 double SlabMesh::NearestPoint(Vector3d point, unsigned vid)
 {
@@ -2819,6 +2834,7 @@ void SlabMesh::GetEnvelopeSet(const Vector4d & lamder, const set<unsigned> & nei
     return;
 }
 
+#ifndef QMAT_NO_CGAL
 double SlabMesh::EvaluateVertexDistanceErrorEnvelope(Vector4d & lamdar, set<unsigned> & neighbor_vertices, set< set<unsigned> > & neighbor_faces, set<unsigned> & bplist)
 {
     bool valid_cone = true;
@@ -2865,6 +2881,7 @@ double SlabMesh::EvaluateVertexDistanceErrorEnvelope(Vector4d & lamdar, set<unsi
     //vertices[vid].second->v_evaluated_distance_error_envelope = maxerror;
     return maxerror;
 }
+#endif // QMAT_NO_CGAL
 
 double SlabMesh::GetHyperbolicLength(unsigned eid)
 {
@@ -2910,7 +2927,7 @@ void SlabMesh::ExportSimplifyResult()
     //f_result_out << simplified_boundary_edges << "\t" << simplified_inside_edges << "\t" << maxhausdorff_distance << endl;
 }
 
-void SlabMesh::Export(std::string fname, Mesh* mesh){
+void SlabMesh::Export(std::string fname){
     fname += "___v_";
     fname += std::to_string(static_cast<long long>(numVertices));
     fname += "___e_";
@@ -2925,15 +2942,10 @@ void SlabMesh::Export(std::string fname, Mesh* mesh){
 
     std::ofstream fout(maname);
 
-    //	GraphVertexIterator gvi,gvi_end;
-
     fout << numVertices << " " << numEdges << " " << numFaces << std::endl;
 
-    //fout << num_vertices(*g) << " " << num_edges(*g) << " " << g->tris.size() << std::endl;
-
     for(unsigned i = 0; i < vertices.size(); i ++)
-        //fout << "v " << vertices[i].second->sphere.center << " " << vertices[i].second->sphere.radius << std::endl;
-        fout << "v " << setiosflags(ios::fixed) << setprecision(15) << (vertices[i].second->sphere.center * mesh->bb_diagonal_length) << " " << (vertices[i].second->sphere.radius * mesh->bb_diagonal_length) << std::endl;
+        fout << "v " << std::setiosflags(std::ios::fixed) << std::setprecision(15) << (vertices[i].second->sphere.center * bb_diagonal_length) << " " << (vertices[i].second->sphere.radius * bb_diagonal_length) << std::endl;
 
     for(unsigned i = 0; i < edges.size(); i ++)
         fout << "e " << edges[i].second->vertices_.first << " " << edges[i].second->vertices_.second << std::endl;

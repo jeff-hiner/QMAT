@@ -11,10 +11,23 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <set>
 #include <map>
 #include <queue>
+#include <utility>
 #include "Wm4Vector.h"
+
+#ifndef QMAT_NO_CGAL
 #include "Mesh.h"
+#endif
+
+#include "GeometryObjects.h"
+
+using std::set;
+using std::pair;
+using std::vector;
+using std::max;
+using std::min;
 
 class PrimVertex{
 public:
@@ -133,13 +146,17 @@ public:
 
 class PrimMesh{
 public:
+#ifndef QMAT_NO_CGAL
     Mesh * pmesh;
     Mesh_domain * domain;
+    Triangulation dt;
+#endif
     std::string meshname;
-    //public:
-    //	std::vector<Bool_PrimVertexPointer> vertices;
-    //	std::vector<Bool_PrimEdgePointer> edges;
-    //	std::vector<Bool_PrimFacePointer> faces;
+
+    // Bounding box diagonal length - used for coordinate normalization
+    // In CGAL mode, this comes from pmesh->bb_diagonal_length
+    // In no-CGAL mode, this must be set directly
+    double bb_diagonal_length;
 
 public:
     unsigned num_f_manifolds;
@@ -164,7 +181,6 @@ public:
     double meanhausdorff_distance;
     double maxhausdorff_distance;
     double initialhausdorff_distance;
-    Triangulation dt;
 
     // 0 for medial mesh
     // 1 for slab mesh
@@ -180,7 +196,9 @@ public:
     long cal_time;
 
 public:
-    PrimMesh() : iniNumVertices(0), iniNumEdges(0), iniNumFaces(0), merge_time(0.0), cal_time(0.0), start_multi(5.0), end_multi(10.0), max_mean_squre_error(0.0), min_mean_squre_error(0.0){};
+    PrimMesh() : bb_diagonal_length(1.0), iniNumVertices(0), iniNumEdges(0), iniNumFaces(0),
+                 merge_time(0.0), cal_time(0.0), start_multi(5.0), end_multi(10.0),
+                 max_mean_squre_error(0.0), min_mean_squre_error(0.0){};
     virtual ~PrimMesh(){};
 
 public:

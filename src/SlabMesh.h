@@ -129,15 +129,17 @@ public:
     void ComputeFacesSimpleTriangles();
 
 public:
+#ifndef QMAT_NO_CGAL
     void initBoundaryCollapseQueue();
-    void initCollapseQueue();
-    void Simplify(int threshold);
     void SimplifyBoudary(int threshold);
     bool MinCostBoundaryEdgeCollapse(unsigned & eid);
-    bool MinCostEdgeCollapse(unsigned & eid);
-    void EvaluateEdgeCollapseCost(unsigned eid);
     void EvaluateEdgeHausdorffCost(unsigned eid);
     void ReEvaluateEdgeHausdorffCost(unsigned eid);
+#endif
+    void initCollapseQueue();
+    void Simplify(int threshold);
+    bool MinCostEdgeCollapse(unsigned & eid);
+    void EvaluateEdgeCollapseCost(unsigned eid);
 
 public:
     void DistinguishVertexType();
@@ -154,13 +156,15 @@ public:
     void PreservBoundaryMethodFive();
 
     void GetEnvelopeSet(const Vector4d & lamder, const set<unsigned> & neighbor_v, const set< std::set<unsigned> > & adj_faces, vector<Sphere> & sph_vec, vector<Cone> & con_vec, vector<SimpleTriangle> & st_vec);
+#ifndef QMAT_NO_CGAL
     double EvaluateVertexDistanceErrorEnvelope(Vector4d & lamder, set<unsigned> & neighbor_vertices, set< set<unsigned> > & neighbor_faces, set<unsigned> & bplist);
+#endif
 
     double GetHyperbolicLength(unsigned eid);
     double GetRatioHyperbolicEuclid(unsigned eid);
 
     void ExportSimplifyResult();
-    void Export(string fname, Mesh* mesh);
+    void Export(std::string fname);
 
 public:
     void clear();
