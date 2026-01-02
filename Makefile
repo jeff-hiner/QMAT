@@ -24,7 +24,7 @@ INCLUDES = -Isrc
 LDFLAGS = -sWASM=1 \
           -sEXPORTED_FUNCTIONS="['_wasm_malloc','_wasm_free','_qmat_simplify']" \
           -sEXPORTED_RUNTIME_METHODS="['ccall','cwrap']" \
-          -sALLOW_MEMORY_GROWTH=0 \
+          -sALLOW_MEMORY_GROWTH=1 \
           -sINITIAL_MEMORY=67108864
 
 # Output
