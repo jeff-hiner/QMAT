@@ -1670,7 +1670,30 @@ void SlabMesh::EvaluateEdgeCollapseCost(unsigned eid){
     }
 
     edges[eid].second->collapse_cost = coll_cost;
-    edges[eid].second->sphere.center = Wm4::Vector3d(lamdar.X(), lamdar.Y(), lamdar.Z());
+
+    // Clamp optimal position to bounding box of the two endpoint vertices
+    // This prevents "fliers" that extend outside the local region
+    Vector3d center1 = vertices[v1].second->sphere.center;
+    Vector3d center2 = vertices[v2].second->sphere.center;
+    double local_min[3], local_max[3];
+    local_min[0] = std::min(center1.X(), center2.X());
+    local_min[1] = std::min(center1.Y(), center2.Y());
+    local_min[2] = std::min(center1.Z(), center2.Z());
+    local_max[0] = std::max(center1.X(), center2.X());
+    local_max[1] = std::max(center1.Y(), center2.Y());
+    local_max[2] = std::max(center1.Z(), center2.Z());
+
+    double cx = lamdar.X();
+    double cy = lamdar.Y();
+    double cz = lamdar.Z();
+    if (cx < local_min[0]) cx = local_min[0];
+    if (cx > local_max[0]) cx = local_max[0];
+    if (cy < local_min[1]) cy = local_min[1];
+    if (cy > local_max[1]) cy = local_max[1];
+    if (cz < local_min[2]) cz = local_min[2];
+    if (cz > local_max[2]) cz = local_max[2];
+
+    edges[eid].second->sphere.center = Wm4::Vector3d(cx, cy, cz);
     edges[eid].second->sphere.radius = lamdar.W();
 }
 
