@@ -21,9 +21,13 @@ OPT ?= -O2
 INCLUDES = -Isrc
 
 # Linker flags for WASM
+# STANDALONE_WASM: Emit standard WASM without Emscripten JS runtime dependencies
+# --no-entry: Library mode (no main function required)
+# This lets wasmtime handle memory growth natively via WASI conventions
 LDFLAGS = -sWASM=1 \
+          -sSTANDALONE_WASM \
+          --no-entry \
           -sEXPORTED_FUNCTIONS="['_wasm_malloc','_wasm_free','_qmat_simplify']" \
-          -sEXPORTED_RUNTIME_METHODS="['ccall','cwrap']" \
           -sALLOW_MEMORY_GROWTH=1 \
           -sINITIAL_MEMORY=67108864
 
