@@ -251,7 +251,7 @@ double Triangle::voronoi_area_Meyer(int i)
     }
 }
 
-double Triangle::voronoi_area_new(int i)
+double Triangle::voronoi_area_new()
 {
     return Area() / 3.;
 }
@@ -819,10 +819,6 @@ bool DifferentialInfoOnEllipsoid(double a, double b, double c, Wm4::Vector3d & p
     so[1][1] = sff[1][1]*fff[0][0] - sff[0][1]*fff[0][1];
 
     so *= 1. / fff.Determinant();
-
-    double gc, mc;
-    gc = so.Determinant();
-    mc = 0.5 * (so[0][0] + so[1][1]);
 
     Wm4::Matrix2d rotmat, diagmat;
     so.EigenDecomposition(rotmat, diagmat);

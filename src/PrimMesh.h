@@ -35,8 +35,9 @@ public:
     std::set<unsigned> faces_; //triangle list
     bool HasEdge(unsigned eid){return (edges_.find(eid) != edges_.end());}
     bool HasFace(unsigned fid){return (faces_.find(fid) != faces_.end());}
-    PrimVertex() : fake_boundary_vertex(false), boundary_vertex(false), saved_vertex(false),
-                   non_manifold_vertex(false), collaspe_weight(0.0), boundVec(Vector3d(0, 0, 0)), mean_square_error(0.0), related_face(0){};
+    PrimVertex() : mean_square_error(0.0), related_face(0),
+                   fake_boundary_vertex(false), boundary_vertex(false), saved_vertex(false),
+                   non_manifold_vertex(false), boundVec(Vector3d(0, 0, 0)), collaspe_weight(0.0){};
     virtual ~PrimVertex(){};
 
 public:
@@ -197,8 +198,8 @@ public:
 
 public:
     PrimMesh() : bb_diagonal_length(1.0), iniNumVertices(0), iniNumEdges(0), iniNumFaces(0),
-                 merge_time(0.0), cal_time(0.0), start_multi(5.0), end_multi(10.0),
-                 max_mean_squre_error(0.0), min_mean_squre_error(0.0){};
+                 start_multi(5.0), end_multi(10.0), max_mean_squre_error(0.0), min_mean_squre_error(0.0),
+                 merge_time(0), cal_time(0){};
     virtual ~PrimMesh(){};
 
 public:

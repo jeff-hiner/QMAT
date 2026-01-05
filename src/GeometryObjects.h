@@ -114,7 +114,7 @@ public:
     bool is_obtuse();
     double anglev(int i);
     double voronoi_area_Meyer(int i);
-    double voronoi_area_new(int i);
+    double voronoi_area_new();
 
 public:
     double v_interpolationerror[3];

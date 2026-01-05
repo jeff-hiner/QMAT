@@ -14,7 +14,7 @@ EMCC = $(EMSDK)/upstream/emscripten/em++.bat
 # Compiler settings
 CXX = $(EMCC)
 # QMAT_NO_CGAL: Use simplified implementation without CGAL dependency
-CXXFLAGS = -std=c++17 -Wall -Wextra -DQMAT_NO_CGAL
+CXXFLAGS = -std=c++17 -Wall -Wextra -Werror -DQMAT_NO_CGAL
 OPT ?= -O2
 
 # Include paths

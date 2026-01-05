@@ -329,7 +329,6 @@ bool SlabMesh::MergeVertices(unsigned vid_src1, unsigned vid_src2, unsigned &vid
     if(vid_src1 == vid_src2)
         return false;
 
-    unsigned eid;
     InsertVertex(new SlabVertex, vid_tgt);
 
     if (vertices[vid_src1].second->saved_vertex || vertices[vid_src2].second->saved_vertex)
@@ -644,15 +643,6 @@ void SlabMesh::ComputeEdgeCone(unsigned eid)
 {
     if(!edges[eid].first)
         return;
-
-    // test validation
-    Vector3d c0 = vertices[edges[eid].second->vertices_.first].second->sphere.center;
-    Vector3d c1 = vertices[edges[eid].second->vertices_.second].second->sphere.center;
-    double r0 = vertices[edges[eid].second->vertices_.first].second->sphere.radius;
-    double r1 = vertices[edges[eid].second->vertices_.second].second->sphere.radius;
-    Vector3d c0c1 = c1-c0;
-    double templeng = c0c1.Length() - abs(r1 - r0);
-
 
     Cone newc(vertices[edges[eid].second->vertices_.first].second->sphere.center, vertices[edges[eid].second->vertices_.first].second->sphere.radius,
               vertices[edges[eid].second->vertices_.second].second->sphere.center, vertices[edges[eid].second->vertices_.second].second->sphere.radius);
@@ -1313,9 +1303,6 @@ bool SlabMesh::MinCostEdgeCollapse(unsigned & eid){
 
         for (std::set<unsigned>::iterator si = vertices[vid_tgt].second->edges_.begin(); si != vertices[vid_tgt].second->edges_.end(); si ++)
         {
-            unsigned fir = edges[*si].second->vertices_.first;
-            unsigned sec = edges[*si].second->vertices_.second;
-
             EvaluateEdgeCollapseCost(*si);
             ComputeEdgeCone(*si);
             edge_collapses_queue.push(EdgeInfo(*si, edges[*si].second->collapse_cost));
@@ -1959,14 +1946,14 @@ void SlabMesh::Simplify(int threshold){
         {
             initial_boundary_preserve = true;
             InitialTopologyProperty();
-            for (int i = 0; i < vertices.size(); i++)
+            for (size_t i = 0; i < vertices.size(); i++)
             {
                 if (vertices[i].first)
                 {
                     set<unsigned> fir_edges = vertices[i].second->edges_;
                     for (set<unsigned>::iterator si = fir_edges.begin(); si != fir_edges.end(); si++)
                     {
-                        int index = edges[*si].second->vertices_.first == i ?
+                        size_t index = edges[*si].second->vertices_.first == static_cast<unsigned>(i) ?
                                     edges[*si].second->vertices_.second : edges[*si].second->vertices_.first;
 
                         if (vertices[index].second->edges_.size() == 1 && vertices[index].second->faces_.size() == 0)
@@ -2026,12 +2013,12 @@ void SlabMesh::Simplify(int threshold){
 void SlabMesh::initCollapseQueue(){
 
     // first initial the edges with fake boundary edge.
-    for (int i = 0; i < numEdges; i++)
+    for (size_t i = 0; i < numEdges; i++)
     {
         if (edges[i].first)
         {
-            EvaluateEdgeCollapseCost(i);
-            edge_collapses_queue.push(EdgeInfo(i, edges[i].second->collapse_cost));
+            EvaluateEdgeCollapseCost(static_cast<unsigned>(i));
+            edge_collapses_queue.push(EdgeInfo(static_cast<unsigned>(i), edges[i].second->collapse_cost));
         }
     }
 }
@@ -2992,24 +2979,24 @@ void SlabMesh::InitialTopologyProperty(unsigned vid) {
     set<unsigned> fir_edges = vertices[vid].second->edges_;
     for (set<unsigned>::iterator si = fir_edges.begin(); si != fir_edges.end(); si++)
     {
-        int index = edges[*si].second->vertices_.first == vid ?
+        size_t index = edges[*si].second->vertices_.first == vid ?
                     edges[*si].second->vertices_.second : edges[*si].second->vertices_.first;
 
         set<unsigned> sec_edges = vertices[index].second->edges_;
         sec_edges.erase(*si);
         for (set<unsigned>::iterator si2 = sec_edges.begin(); si2 != sec_edges.end(); si2++)
         {
-            int index2 = edges[*si2].second->vertices_.first == index ?
+            size_t index2 = edges[*si2].second->vertices_.first == static_cast<unsigned>(index) ?
                          edges[*si2].second->vertices_.second : edges[*si2].second->vertices_.first;
 
             set<unsigned> third_edges = vertices[index2].second->edges_;
             third_edges.erase(*si2);
             for (set<unsigned>::iterator si3 = third_edges.begin(); si3 != third_edges.end(); si3++)
             {
-                int index3 = edges[*si3].second->vertices_.first == index2 ?
+                size_t index3 = edges[*si3].second->vertices_.first == static_cast<unsigned>(index2) ?
                              edges[*si3].second->vertices_.second : edges[*si3].second->vertices_.first;
 
-                if (index3 == vid)
+                if (index3 == static_cast<size_t>(vid))
                 {
                     // 三个点形成了环路，检测是面还是hole
                     bool is_hole = true;
@@ -3055,11 +3042,11 @@ void SlabMesh::InitialTopologyProperty(unsigned vid) {
 }
 
 void SlabMesh::InitialTopologyProperty() {
-    for (int i = 0 ;i < vertices.size(); i++)
+    for (size_t i = 0; i < vertices.size(); i++)
     {
         if(vertices[i].first)
         {
-            InitialTopologyProperty(i);
+            InitialTopologyProperty(static_cast<unsigned>(i));
         }
     }
 }

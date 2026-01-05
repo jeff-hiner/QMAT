@@ -151,6 +151,39 @@ namespace Wm4
         static const Real INV_LN_10;
     };
 
+// Explicit specialization declarations (definitions in Wm4Math.cpp)
+template<> const float Math<float>::EPSILON;
+template<> const float Math<float>::ZERO_TOLERANCE;
+template<> const float Math<float>::INVERSE_TOLERANCE;
+template<> const float Math<float>::MAX_REAL;
+template<> const float Math<float>::PI;
+template<> const float Math<float>::TWO_PI;
+template<> const float Math<float>::HALF_PI;
+template<> const float Math<float>::INV_PI;
+template<> const float Math<float>::INV_TWO_PI;
+template<> const float Math<float>::DEG_TO_RAD;
+template<> const float Math<float>::RAD_TO_DEG;
+template<> const float Math<float>::LN_2;
+template<> const float Math<float>::LN_10;
+template<> const float Math<float>::INV_LN_2;
+template<> const float Math<float>::INV_LN_10;
+
+template<> const double Math<double>::EPSILON;
+template<> const double Math<double>::ZERO_TOLERANCE;
+template<> const double Math<double>::INVERSE_TOLERANCE;
+template<> const double Math<double>::MAX_REAL;
+template<> const double Math<double>::PI;
+template<> const double Math<double>::TWO_PI;
+template<> const double Math<double>::HALF_PI;
+template<> const double Math<double>::INV_PI;
+template<> const double Math<double>::INV_TWO_PI;
+template<> const double Math<double>::DEG_TO_RAD;
+template<> const double Math<double>::RAD_TO_DEG;
+template<> const double Math<double>::LN_2;
+template<> const double Math<double>::LN_10;
+template<> const double Math<double>::INV_LN_2;
+template<> const double Math<double>::INV_LN_10;
+
 // Geometric Tools, Inc.
 // http://www.geometrictools.com
 // Copyright (c) 1998-2006.  All Rights Reserved

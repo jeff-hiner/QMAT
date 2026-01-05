@@ -122,6 +122,17 @@ namespace Wm4
         Real m_afTuple[2];
     };
 
+// Explicit specialization declarations for Vector2 (definitions in Wm4Vector.cpp)
+template<> const Vector2<float> Vector2<float>::ZERO;
+template<> const Vector2<float> Vector2<float>::UNIT_X;
+template<> const Vector2<float> Vector2<float>::UNIT_Y;
+template<> const Vector2<float> Vector2<float>::ONE;
+
+template<> const Vector2<double> Vector2<double>::ZERO;
+template<> const Vector2<double> Vector2<double>::UNIT_X;
+template<> const Vector2<double> Vector2<double>::UNIT_Y;
+template<> const Vector2<double> Vector2<double>::ONE;
+
 // arithmetic operations
     template <class Real>
     Vector2<Real> operator* (Real fScalar, const Vector2<Real>& rkV);
@@ -741,6 +752,25 @@ namespace Wm4
 
         Real m_afTuple[3];
     };
+
+// Explicit specialization declarations for Vector3 (definitions in Wm4Vector.cpp)
+template<> const Vector3<int> Vector3<int>::ZERO;
+template<> const Vector3<int> Vector3<int>::UNIT_X;
+template<> const Vector3<int> Vector3<int>::UNIT_Y;
+template<> const Vector3<int> Vector3<int>::UNIT_Z;
+template<> const Vector3<int> Vector3<int>::ONE;
+
+template<> const Vector3<float> Vector3<float>::ZERO;
+template<> const Vector3<float> Vector3<float>::UNIT_X;
+template<> const Vector3<float> Vector3<float>::UNIT_Y;
+template<> const Vector3<float> Vector3<float>::UNIT_Z;
+template<> const Vector3<float> Vector3<float>::ONE;
+
+template<> const Vector3<double> Vector3<double>::ZERO;
+template<> const Vector3<double> Vector3<double>::UNIT_X;
+template<> const Vector3<double> Vector3<double>::UNIT_Y;
+template<> const Vector3<double> Vector3<double>::UNIT_Z;
+template<> const Vector3<double> Vector3<double>::ONE;
 
 // arithmetic operations
     template <class Real>
@@ -1516,6 +1546,21 @@ namespace Wm4
 
         Real m_afTuple[4];
     };
+
+// Explicit specialization declarations for Vector4 (definitions in Wm4Vector.cpp)
+template<> const Vector4<float> Vector4<float>::ZERO;
+template<> const Vector4<float> Vector4<float>::UNIT_X;
+template<> const Vector4<float> Vector4<float>::UNIT_Y;
+template<> const Vector4<float> Vector4<float>::UNIT_Z;
+template<> const Vector4<float> Vector4<float>::UNIT_W;
+template<> const Vector4<float> Vector4<float>::ONE;
+
+template<> const Vector4<double> Vector4<double>::ZERO;
+template<> const Vector4<double> Vector4<double>::UNIT_X;
+template<> const Vector4<double> Vector4<double>::UNIT_Y;
+template<> const Vector4<double> Vector4<double>::UNIT_Z;
+template<> const Vector4<double> Vector4<double>::UNIT_W;
+template<> const Vector4<double> Vector4<double>::ONE;
 
 // arithmetic operations
     template <class Real>

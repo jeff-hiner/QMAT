@@ -958,7 +958,7 @@ double MPMesh::vertex_voronoi_area_new(Vertex_handle vh)
             Vector3d va = to_wm4(havc->next()->vertex()->point());
 
             Triangle t(v,vp,va);
-            area += t.voronoi_area_new(0);
+            area += t.voronoi_area_new();
         }
         havc ++;
     }
