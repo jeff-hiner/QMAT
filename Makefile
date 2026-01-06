@@ -1,6 +1,7 @@
-# Q-MAT WASM Build Makefile
+# Q-MAT Build Makefile
 # Usage:
-#   make          - Build with -O2
+#   make          - Build WASM with -O2
+#   make native   - Build native CLI executable
 #   make OPT=-O0  - Build without optimizations (for debugging)
 #   make -j4      - Parallel build
 #   make clean    - Remove build artifacts
@@ -11,10 +12,15 @@ SHELL := /usr/bin/bash
 EMSDK ?= /c/Users/prelu/git/emsdk
 EMCC = $(EMSDK)/upstream/emscripten/em++.bat
 
-# Compiler settings
+# Native compiler (auto-detect: prefer g++ on Windows/MSYS2)
+NATIVE_CXX ?= g++
+
+# WASM Compiler settings
 CXX = $(EMCC)
 # QMAT_NO_CGAL: Use simplified implementation without CGAL dependency
-CXXFLAGS = -std=c++17 -Wall -Wextra -Werror -DQMAT_NO_CGAL
+CXXFLAGS = -std=c++17 -Wall -Wextra -Werror -msimd128 -DQMAT_NO_CGAL
+# Native: relax warnings (third-party code has GCC 13 warnings)
+CXXFLAGS_NATIVE = -std=c++17 -Wall -mavx2 -DQMAT_NO_CGAL -Wno-maybe-uninitialized -Wno-unused-variable
 OPT ?= -O2
 
 # Include paths
@@ -34,11 +40,13 @@ LDFLAGS = -sWASM=1 \
 # Output
 TARGET = qmat_buffer.js
 TARGET_WASM = qmat_buffer.wasm
+TARGET_NATIVE = qmat_native
 
 # Build directory
 BUILDDIR = build
+BUILDDIR_NATIVE = build_native
 
-# Source files
+# Source files (WASM)
 SRCS = src/Wm4Math.cpp \
        src/Wm4Matrix.cpp \
        src/Wm4Vector.cpp \
@@ -47,10 +55,20 @@ SRCS = src/Wm4Math.cpp \
        src/SlabMesh.cpp \
        qmat_wasm_api.cpp
 
+# Source files (Native CLI)
+SRCS_NATIVE = src/Wm4Math.cpp \
+              src/Wm4Matrix.cpp \
+              src/Wm4Vector.cpp \
+              src/GeometryObjects.cpp \
+              src/PrimMesh.cpp \
+              src/SlabMesh.cpp \
+              main_nocgal.cpp
+
 # Object files in build directory
 OBJS = $(patsubst %.cpp,$(BUILDDIR)/%.o,$(SRCS))
+OBJS_NATIVE = $(patsubst %.cpp,$(BUILDDIR_NATIVE)/%.o,$(SRCS_NATIVE))
 
-# Default target
+# Default target (WASM)
 all: $(TARGET)
 
 # Link all objects into final output
@@ -71,7 +89,7 @@ $(BUILDDIR):
 
 # Clean build artifacts
 clean:
-	rm -rf $(BUILDDIR) $(TARGET) $(TARGET_WASM)
+	rm -rf $(BUILDDIR) $(BUILDDIR_NATIVE) $(TARGET) $(TARGET_WASM) $(TARGET_NATIVE)
 
 # Rebuild from scratch
 rebuild: clean all
@@ -84,4 +102,30 @@ info:
 	@echo "CXX: $(CXX)"
 	@echo "CXXFLAGS: $(CXXFLAGS) $(OPT)"
 
-.PHONY: all clean rebuild info
+#==============================================================================
+# Native build targets
+#==============================================================================
+
+# Build native CLI executable
+native: $(TARGET_NATIVE)
+
+# Link native executable
+$(TARGET_NATIVE): $(OBJS_NATIVE)
+	@echo "=== Linking $(TARGET_NATIVE) ==="
+	$(NATIVE_CXX) $(CXXFLAGS_NATIVE) $(OPT) $^ -o $@
+	@echo "=== Native build complete ==="
+	@ls -la $(TARGET_NATIVE) 2>/dev/null || dir $(TARGET_NATIVE) 2>NUL
+
+# Compile native objects
+$(BUILDDIR_NATIVE)/%.o: %.cpp | $(BUILDDIR_NATIVE)
+	@mkdir -p $(dir $@)
+	$(NATIVE_CXX) $(CXXFLAGS_NATIVE) $(OPT) $(INCLUDES) -c $< -o $@
+
+# Create native build directory
+$(BUILDDIR_NATIVE):
+	@mkdir -p $(BUILDDIR_NATIVE)/src
+
+# Rebuild native
+rebuild-native: clean native
+
+.PHONY: all clean rebuild info native rebuild-native

@@ -152,6 +152,8 @@ namespace Wm4
     };
 
 // Explicit specialization declarations (definitions in Wm4Math.cpp)
+// MSVC doesn't support this syntax, but handles linkage differently
+#ifndef _MSC_VER
 template<> const float Math<float>::EPSILON;
 template<> const float Math<float>::ZERO_TOLERANCE;
 template<> const float Math<float>::INVERSE_TOLERANCE;
@@ -183,6 +185,7 @@ template<> const double Math<double>::LN_2;
 template<> const double Math<double>::LN_10;
 template<> const double Math<double>::INV_LN_2;
 template<> const double Math<double>::INV_LN_10;
+#endif
 
 // Geometric Tools, Inc.
 // http://www.geometrictools.com

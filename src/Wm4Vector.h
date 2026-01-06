@@ -123,6 +123,7 @@ namespace Wm4
     };
 
 // Explicit specialization declarations for Vector2 (definitions in Wm4Vector.cpp)
+#ifndef _MSC_VER
 template<> const Vector2<float> Vector2<float>::ZERO;
 template<> const Vector2<float> Vector2<float>::UNIT_X;
 template<> const Vector2<float> Vector2<float>::UNIT_Y;
@@ -132,6 +133,7 @@ template<> const Vector2<double> Vector2<double>::ZERO;
 template<> const Vector2<double> Vector2<double>::UNIT_X;
 template<> const Vector2<double> Vector2<double>::UNIT_Y;
 template<> const Vector2<double> Vector2<double>::ONE;
+#endif
 
 // arithmetic operations
     template <class Real>
@@ -754,6 +756,7 @@ namespace Wm4
     };
 
 // Explicit specialization declarations for Vector3 (definitions in Wm4Vector.cpp)
+#ifndef _MSC_VER
 template<> const Vector3<int> Vector3<int>::ZERO;
 template<> const Vector3<int> Vector3<int>::UNIT_X;
 template<> const Vector3<int> Vector3<int>::UNIT_Y;
@@ -771,6 +774,7 @@ template<> const Vector3<double> Vector3<double>::UNIT_X;
 template<> const Vector3<double> Vector3<double>::UNIT_Y;
 template<> const Vector3<double> Vector3<double>::UNIT_Z;
 template<> const Vector3<double> Vector3<double>::ONE;
+#endif
 
 // arithmetic operations
     template <class Real>
@@ -1548,6 +1552,7 @@ namespace Wm4
     };
 
 // Explicit specialization declarations for Vector4 (definitions in Wm4Vector.cpp)
+#ifndef _MSC_VER
 template<> const Vector4<float> Vector4<float>::ZERO;
 template<> const Vector4<float> Vector4<float>::UNIT_X;
 template<> const Vector4<float> Vector4<float>::UNIT_Y;
@@ -1561,6 +1566,7 @@ template<> const Vector4<double> Vector4<double>::UNIT_Y;
 template<> const Vector4<double> Vector4<double>::UNIT_Z;
 template<> const Vector4<double> Vector4<double>::UNIT_W;
 template<> const Vector4<double> Vector4<double>::ONE;
+#endif
 
 // arithmetic operations
     template <class Real>
